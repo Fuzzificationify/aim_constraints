@@ -1,0 +1,225 @@
+
+
+
+import sys
+
+from PySide2 import QtCore
+from PySide2 import QtWidgets
+from PySide2 import QtGui
+from shiboken2 import wrapInstance
+
+import maya.OpenMayaUI as omui
+
+
+def maya_main_window():
+    """
+    Return the Maya main window widget as a Python object
+    """
+    main_window_ptr = omui.MQtUtil.mainWindow()
+    if sys.version_info.major >= 3:
+        return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
+    else:
+        return wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
+
+
+class TestDialog(QtWidgets.QDialog):
+
+    def __init__(self, parent=maya_main_window()):
+        super(TestDialog, self).__init__(parent)
+
+        self.selection = False
+        self.checked_dic = {}
+
+        self.test_btn = QtWidgets.QPushButton('test')
+
+        self.line_edit = QtWidgets.QLineEdit()
+        self.line_btn = QtWidgets.QPushButton('sel')
+
+        self.cb = QtWidgets.QRadioButton("x")
+        self.cb2 = QtWidgets.QRadioButton("y")
+        self.cb3 = QtWidgets.QRadioButton("z")
+        self.cb4 = QtWidgets.QRadioButton("-x")
+        self.cb5 = QtWidgets.QRadioButton("-y")
+        self.cb6 = QtWidgets.QRadioButton("-z")
+
+        self.cb_list = [self.cb, self.cb2, self.cb3, self.cb4, self.cb5, self.cb6]
+
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.cb)
+        self.layout.addWidget(self.cb2)
+        self.layout.addWidget(self.cb3)
+        self.layout.addWidget(self.cb4)
+        self.layout.addWidget(self.cb5)
+        self.layout.addWidget(self.cb6)
+
+
+        self.layout1 = QtWidgets.QHBoxLayout()
+        self.layout1.addWidget(self.line_edit)
+        self.layout1.addWidget(self.line_btn)
+
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.addLayout(self.layout1)
+        self.main_layout.addLayout(self.layout)
+        self.main_layout.addWidget(self.test_btn)
+
+
+        self.line_btn.clicked.connect(self.get_sel)
+
+        self.test_btn.clicked.connect(self.generate_full_checked_list)
+
+
+        self.cb_menu = context_menu(self.cb)
+        self.cb_menu.connect_menu(self.cb)
+
+        self.cb2_menu = context_menu(self.cb2)
+        self.cb2_menu.connect_menu(self.cb2)
+
+        self.cb3_menu = context_menu(self.cb3)
+        self.cb3_menu.connect_menu(self.cb3)
+
+        self.cb4_menu = context_menu(self.cb4)
+        self.cb4_menu.connect_menu(self.cb4)
+
+        self.cb5_menu = context_menu(self.cb5)
+        self.cb5_menu.connect_menu(self.cb5)
+
+        self.cb6_menu = context_menu(self.cb6)
+        self.cb6_menu.connect_menu(self.cb6)
+
+        self.cb_menu_list = [self.cb_menu, self.cb2_menu, self.cb3_menu, self.cb4_menu, self.cb5_menu, self.cb6_menu]
+
+
+    def get_sel(self):
+        self.selection = mc.ls(sl=1)
+
+        self.line_edit.setText(str(self.selection))
+
+        for cb in self.cb_menu_list:
+            cb.conjure_menu(self.selection)
+
+
+    def test(self):
+        all_checked_items = []
+        for menu in self.cb_menu_list:
+            self.checked_items = menu.get_inside(menu, menu.widg)
+            if self.checked_items != ():
+                all_checked_items.append(self.checked_items)
+        # print(all_checked_items)
+
+    def generate_full_checked_list(self):
+
+        for i, menu in enumerate(self.cb_menu_list):
+            x, self.checked_dic[i] = menu.check_if_check(menu)
+        print(self.checked_dic)
+
+
+
+class context_menu(QtWidgets.QWidget):
+    def __init__(self, widg, parent=None):
+          super(context_menu, self).__init__(parent)
+
+          self.widg = widg
+
+
+    def conjure_menu(self, selection):
+        self.popMenu = QtWidgets.QMenu(self)
+        try:
+            # Dictionary of actions (which are the Checkboxes in practise) from the Qmenu
+            self.menu_actions = {}
+            for i, item in enumerate(selection):
+                self.menu_actions[i] = (QtWidgets.QAction(item, self, checkable=True))
+                self.popMenu.addAction(self.menu_actions[i])
+        except:
+            pass
+
+    def classy_menu(self):
+        # show context menu
+
+        pos = self.widg1.rect().bottomLeft()
+        self.popMenu.exec_(self.widg1.mapToGlobal(pos))
+
+        if self.check_if_check(self):
+            self.widg1.setStyleSheet("QRadioButton { font-weight: bold; color: orange }")
+        else:
+            self.widg1.setStyleSheet("QRadioButton { font-weight: ; color:  }")
+
+        print("check :", self.check_if_check(self))
+
+        self.check_if_exclusive_check(self)
+        # d.generate_full_checked_list()
+        # print("TestDialog.checked_dic :", d.checked_dic)
+        # print("checked_dic :", d.checked_dic[0])
+        # for i, each in enumerate(d.checked_dic):
+        #     print(d.checked_dic[i][0])
+        # # self.check_if_exclusive_check(self)
+
+    def connect_menu(self, widg1):
+
+        self.widg1 = widg1
+        widg1.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        widg1.customContextMenuRequested.connect(self.classy_menu)
+
+
+
+    def get_inside(self, menu, widg):
+        menu_actions = menu.menu_actions
+
+        self.checked_tup = ()
+        self.checked_action = []
+        self.widg_dic = {}
+
+        for i, each in enumerate(menu_actions):
+            if menu_actions[i].isChecked():
+                self.checked_tup = (widg.text(), menu_actions[i].text())
+                self.checked_action.append(widg.text())
+                self.checked_action.append(i)
+
+        print(self.checked_action)
+        return self.checked_tup, self.checked_action
+
+
+    def check_if_check(self, menu):
+        # Get the actions (which are the Checkboxes in practise) from the Qmenu
+        self.menu_actions = menu.menu_actions
+        action_list = []
+
+        self.widg_action_list = []
+
+        for i, action in enumerate(self.menu_actions):
+            checked = self.menu_actions[i].isChecked()
+            action_list.append(checked)
+            self.widg_action_list.append(checked)
+
+        if any(action_list):
+            # print("here", self.widg.text(), action_list)
+            # print("self.widg_action_list: ", self.widg_action_list)
+            return True, self.widg_action_list
+        else:
+            return False, self.widg_action_list
+
+    def check_if_exclusive_check(self, menus):
+
+        #Get active (checked) box from click (active menu)
+        for i, action in enumerate(self.widg_action_list):
+            if action == True:
+                active_box = i
+                print("active_box :", active_box)
+
+
+        d.generate_full_checked_list()
+
+        for i, each in enumerate(d.checked_dic):
+            if d.checked_dic[i][active_box] == True:
+                self.unCheck_dup_box()
+            print(d.checked_dic[i][active_box])
+
+    def unCheck_dup_box(self):
+        
+
+
+
+
+if __name__ == "__main__":
+
+    d = TestDialog()
+    d.show()
