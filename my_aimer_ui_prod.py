@@ -293,13 +293,15 @@ class OpenSliderDialog(QtWidgets.QDialog):
 
         # Selection Widgets
         self.sel_line_edit = QtWidgets.QLineEdit()
+        self.sel_line_edit.setEnabled(False)
         self.store_sel_btn = QtWidgets.QPushButton("")
         self.store_sel_btn.setIcon(QtGui.QIcon(":selectByObject.png"))
 
         self.world_cb = QtWidgets.QCheckBox("World")
         self.world_cb.setChecked(True)
         self.space_sel_line_edit = QtWidgets.QLineEdit()
-        self.space_sel_line_edit.setStyleSheet("QLineEdit { background-color: gray }")
+        self.space_sel_line_edit.setEnabled(False)
+        self.space_sel_line_edit.setStyleSheet("QLineEdit { color: white; background-color: gray }")
         self.store_space_btn = QtWidgets.QPushButton("")
         self.store_space_btn.setIcon(QtGui.QIcon(":selectByObject.png"))
 
@@ -378,7 +380,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.build_btn = QtWidgets.QPushButton("Build")
         self.delete_btn = QtWidgets.QPushButton("Delete")
         self.close_btn = QtWidgets.QPushButton("Close")
-
 
     def create_layout(self):
         # Locator Slider Layout
@@ -513,7 +514,8 @@ class OpenSliderDialog(QtWidgets.QDialog):
     def get_sel(self):
         self.selection = mc.ls(sl=1)
         self.sel_line_edit.setText(str(self.selection))
-        self.sel_line_edit.setStyleSheet("QLineEdit { background-color: Sienna }")
+        self.sel_line_edit.setStyleSheet("QLineEdit { color: white; background-color: Sienna }")
+
 
 
     def make_menus(self):
@@ -528,7 +530,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
     def get_space_sel(self):
         space_selection = mc.ls(sl=1)[0]
         self.space_sel_line_edit.setText(str(space_selection))
-        self.space_sel_line_edit.setStyleSheet("QLineEdit { background-color: Saddlebrown }")
+        self.space_sel_line_edit.setStyleSheet("QLineEdit { color: whitebackground-color: Saddlebrown }")
 
     def toggle_world_cb(self):
         self.world_cb.setChecked(False)
@@ -539,8 +541,8 @@ class OpenSliderDialog(QtWidgets.QDialog):
             self.space_sel_line_edit.setEnabled(False)
             self.space_sel_line_edit.setStyleSheet("QLineEdit { background-color: gray }")
         else:
-            self.space_sel_line_edit.setEnabled(True)
-            self.space_sel_line_edit.setStyleSheet("")
+            # self.space_sel_line_edit.setEnabled(True)
+            self.space_sel_line_edit.setStyleSheet("QLineEdit { color: white; background-color: Saddlebrown }")
 
 
 
@@ -561,17 +563,23 @@ class OpenSliderDialog(QtWidgets.QDialog):
         # Run if locator exists
         if self.temp_slider_locators:
 
+            print("temp_loc_list:", self.temp_loc_list)
+            print("chain_ctrls:", self.chain_ctrls)
             for i, ctrl in enumerate(self.chain_ctrls):
+                print("i in for loop: ", i)
                 # Find the overrides
                 if ctrl in self.chain_ctrl_override:
                     ctrl_index = self.chain_ctrl_override.index(ctrl)
                     ctrl_axis = self.chain_ctrl_axis_override[ctrl_index]
 
-                    self.offset_override_value = [i * self.slider_val for i in ctrl_axis]
+                    self.offset_override_value = [x * self.slider_val for x in ctrl_axis]
                     mc.xform(self.temp_loc_list[i], objectSpace=1, translation=self.offset_override_value)
 
                 else:
-                    self.offset_value = [i * self.slider_val for i in self.axis_matrix]
+                    print("in else")
+                    print("i in else: ", i)
+                    self.offset_value = [x * self.slider_val for x in self.axis_matrix]
+                    print("temp_loc_list[i]:", self.temp_loc_list[i])
                     mc.xform(self.temp_loc_list[i], objectSpace=1, translation=self.offset_value)
 
         else:
@@ -637,7 +645,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
 
         self.slider_val = float(self.slider.value())/2
 
-        self.offset_value = [i * self.slider_val for i in self.axis_matrix]
+        self.offset_value = [x * self.slider_val for x in self.axis_matrix]
 
         # Get appropriate up vector
         self.up_vector = (0, 0, 1)
@@ -708,11 +716,11 @@ class OpenSliderDialog(QtWidgets.QDialog):
                 ctrl_index = self.chain_ctrl_override.index(ctrl)
                 ctrl_axis = self.chain_ctrl_axis_override[ctrl_index]
 
-                offset_value = [i * self.slider_val for i in ctrl_axis]
+                offset_value = [x * self.slider_val for x in ctrl_axis]
                 mc.xform(temp_loc, relative=1, objectSpace=1, translation=offset_value)
 
             else:
-                self.offset_value = [i * self.slider_val for i in self.axis_matrix]
+                self.offset_value = [x * self.slider_val for x in self.axis_matrix]
                 mc.xform(temp_loc, relative=1, objectSpace=1, translation=self.offset_value)
 
 
@@ -801,7 +809,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
                 ctrl_index = self.chain_ctrl_override.index(obj)
                 ctrl_axis = self.chain_ctrl_axis_override[ctrl_index]
 
-                offset_value = [i * self.slider_val for i in ctrl_axis]
+                offset_value = [x * self.slider_val for x in ctrl_axis]
                 mc.xform(targetLoc, relative=1, objectSpace=1, translation=offset_value)
             else:
                 mc.xform(targetLoc, relative=1, objectSpace=1, translation=self.offset_value)
@@ -838,7 +846,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
         else:
             pass
 
-
     def make_aim_constraints(self):
         # Setting the pointCon for rootLocs (to lock ctrls in place), and Aim constraints
 
@@ -849,7 +856,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
                 ctrl_index = self.chain_ctrl_override.index(self.chain_ctrls[i])
                 ctrl_axis = self.chain_ctrl_axis_override[ctrl_index]
 
-                self.offset_override_value = [i * self.slider_val for i in ctrl_axis]
+                self.offset_override_value = [x * self.slider_val for x in ctrl_axis]
 
                 mc.aimConstraint(self.targetLocList[i], self.offsetLocList[i], mo=1, weight=1,
                                  aimVector=ctrl_axis,
@@ -912,15 +919,23 @@ class OpenSliderDialog(QtWidgets.QDialog):
 
 
 
+# if __name__ == "__main__":
+#     #     open_slider_dialog.close() # pylint: disable=E0601
+#
+#     try:
+#         open_slider_dialog.show()
+#     except:
+#         open_slider_dialog = OpenSliderDialog()
+#         open_slider_dialog.show()
+
+
 if __name__ == "__main__":
 
-    # try:
-    #     open_slider_dialog.close() # pylint: disable=E0601
-    #     open_slider_dialog.deleteLater()
-    # except:
-    #     pass
-    if open_slider_dialog:
-        open_slider_dialog.show()
-    else:
-        open_slider_dialog = OpenSliderDialog()
-        open_slider_dialog.show()
+    try:
+        open_slider_dialog.close() # pylint: disable=E0601
+        open_slider_dialog.deleteLater()
+    except:
+        pass
+
+    open_slider_dialog = OpenSliderDialog()
+    open_slider_dialog.show()
