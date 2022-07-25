@@ -833,6 +833,10 @@ class OpenSliderDialog(QtWidgets.QDialog):
         # Setting Aim Constraints
         self.make_aim_constraints()
 
+
+        #Spheres
+        self.make_spheres()
+
     def set_space(self):
         # Check if world space, make constraint and bake if not
         self.rooter_grp = mc.group(name="collection_Aim_Loc_Grp", empty=1)
@@ -872,6 +876,17 @@ class OpenSliderDialog(QtWidgets.QDialog):
             mc.orientConstraint(self.offsetLocList[i], self.chain_ctrls[i], mo=0)
 
         mc.select(clear=True)
+
+    def make_spheres(self):
+        #create nurbs Spheres
+        self.sphere_grp = mc.group(name="sphere_grp", empty=1)
+        mc.parent(self.sphere_grp, self.rooter_grp)
+        mc.setAttr(self.sphere_grp + ".visibility", 0)
+        for index, ctrl in enumerate(self.chain_ctrls):
+            sphere = mc.sphere(radius=self.slider_val, n=ctrl + "_sphere", ch=0)
+            mc.parent(sphere, self.sphere_grp)
+            mc.pointConstraint(ctrl, sphere, mo=0)
+            mc.geometryConstraint(sphere, self.targetLocList[index])
 
 
     def delete_rig_stuff(self):
