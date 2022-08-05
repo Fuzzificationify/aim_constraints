@@ -137,211 +137,8 @@ class customBut(QtWidgets.QPushButton):
             open_slider_dialog.make_menus()
 
         elif (event.button() == QtCore.Qt.MouseButton.RightButton):
-            mc.select(open_slider_dialog.selection)
-
-
-
-class context_menu(QtWidgets.QWidget):
-    def __init__(self, widg, parent=None):
-        super(context_menu, self).__init__(parent)
-
-        self.widg = widg
-        self.checked_tup_dic = {}
-
-    def conjure_menu(self, selection):
-        self.popMenu = QtWidgets.QMenu(self)
-        try:
-            # Dictionary of actions (which are the Checkboxes in practise) from the Qmenu
-            self.menu_actions = {}
-            for i, item in enumerate(selection):
-                self.menu_actions[i] = (QtWidgets.QAction(item, self, checkable=True))
-                self.popMenu.addAction(self.menu_actions[i])
-        except:
-            pass
-
-    def classy_menu(self):
-        # show context menu
-        pos = self.widg1.rect().bottomLeft()
-        self.popMenu.exec_(self.widg1.mapToGlobal(pos))
-
-        # The [0] is to get the True / False return
-        if self.check_if_check(self)[0]:
-            self.widg1.setStyleSheet("QRadioButton { font-weight: bold; color: orange }")
-
-            self.check_if_exclusive_check(self)
-
-        else:
-            self.widg1.setStyleSheet("QRadioButton { font-weight: ; color:  }")
-
-        # Forces colour resets
-        open_slider_dialog.generate_full_checked_list()
-
-
-    def connect_menu(self, widg1):
-        self.widg1 = widg1
-        widg1.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        widg1.customContextMenuRequested.connect(self.classy_menu)
-
-
-    def get_inside(self, menu, widg):
-        menu_actions = menu.menu_actions
-
-        self.checked_action = []
-        self.checked_tups = []
-
-        for i, each in enumerate(menu_actions):
-            if menu_actions[i].isChecked():
-                self.checked_tup = (widg.text(), menu_actions[i].text())
-
-                self.checked_action.append(widg.text())
-                self.checked_tups.append(self.checked_tup)
-            else:
-                self.checked_tup = None
-
-
-        return self.checked_tups
-
-import sys
-
-from PySide2 import QtCore
-from PySide2 import QtWidgets
-from shiboken2 import wrapInstance
-
-from PySide2 import QtGui
-
-import maya.OpenMayaUI as omui
-import maya.cmds as mc
-
-
-def maya_main_window():
-    """
-    Return the Maya main window widget as a Python object
-    """
-    main_window_ptr = omui.MQtUtil.mainWindow()
-    if sys.version_info.major >= 3:
-        return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
-    else:
-        return wrapInstance(long(main_window_ptr), QtWidgets.QWidget)
-
-
-###  Collapsable Stuff ###
-
-class CollapsibleHeader(QtWidgets.QWidget):
-
-    COLLAPSED_PIXMAP = QtGui.QPixmap(":teRightArrow.png")
-    EXPANCED_PIXMAP = QtGui.QPixmap(":teDownArrow.png")
-
-    clicked = QtCore.Signal()
-
-    def __init__(self, text, parent=None):
-        super(CollapsibleHeader, self).__init__(parent)
-
-        self.setAutoFillBackground(True)
-        self.set_background_color(QtCore.Qt.darkCyan)
-
-        self.icon_label = QtWidgets.QLabel()
-        self.icon_label.setFixedWidth(self.COLLAPSED_PIXMAP.width())
-
-        self.text_label = QtWidgets.QLabel()
-        self.text_label.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-
-        self.main_layout = QtWidgets.QHBoxLayout(self)
-        self.main_layout.setContentsMargins(2, 2, 2, 2)
-        self.main_layout.addWidget(self.icon_label)
-        self.main_layout.addWidget(self.text_label)
-
-        self.set_text(text)
-        self.set_expanded(False)
-
-    def set_text(self, text):
-        self.text_label.setText("<b>{0}</b>".format(text))
-        self.text_label.setStyleSheet("QLabel {color: thistle}")
-
-    def set_background_color(self, color):
-        if not color:
-            color = QtWidgets.QPushButton().palette().color(QtGui.QPalette.Button)
-
-        palette = self.palette()
-        palette.setColor(QtGui.QPalette.Window, color)
-        self.setPalette(palette)
-
-    def is_expanded(self):
-        return self._expanded
-
-    def set_expanded(self, expanded):
-        self._expanded = expanded
-
-        if(self._expanded):
-            self.icon_label.setPixmap(self.EXPANCED_PIXMAP)
-        else:
-            self.icon_label.setPixmap(self.COLLAPSED_PIXMAP)
-
-    def mouseReleaseEvent(self, event):
-        self.clicked.emit()
-
-class CollapsibleWidget(QtWidgets.QWidget):
-
-    def __init__(self, text, parent=None):
-        super(CollapsibleWidget, self).__init__(parent)
-
-        self.header_wdg = CollapsibleHeader(text)
-        self.header_wdg.clicked.connect(self.on_header_clicked)
-
-        self.body_wdg = QtWidgets.QWidget()
-
-        self.body_layout = QtWidgets.QVBoxLayout(self.body_wdg)
-        self.body_layout.setContentsMargins(4, 2, 4, 2)
-        self.body_layout.setSpacing(3)
-
-        self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.addWidget(self.header_wdg)
-        self.main_layout.addWidget(self.body_wdg)
-
-        self.set_expanded(False)
-
-    def add_widget(self, widget):
-        self.body_layout.addWidget(widget)
-
-    def add_layout(self, layout):
-        self.body_layout.addLayout(layout)
-
-    def set_expanded(self, expanded):
-        self.header_wdg.set_expanded(expanded)
-        self.body_wdg.setVisible(expanded)
-
-    def on_header_clicked(self):
-        self.set_expanded(not self.header_wdg.is_expanded())
-        if self.header_wdg.is_expanded():
-            open_slider_dialog.adjustSize()
-        else:
-            for i in range(10):
-                QtCore.QCoreApplication.processEvents()
-
-            open_slider_dialog.resize(open_slider_dialog.minimumSizeHint())
-
-
-    def set_header_background_color(self, color):
-        self.header_wdg.set_background_color(color)
-
-
-### Collapsable Stuff End ###
-
-
-class customBut(QtWidgets.QPushButton):
-
-    def __init__(self, text='', parent=None):
-        super(customBut, self).__init__(text, parent)
-
-    def mousePressEvent(self, event):
-
-        if (event.button() == QtCore.Qt.MouseButton.LeftButton):
-            open_slider_dialog.get_sel()
-            open_slider_dialog.make_menus()
-
-        elif (event.button() == QtCore.Qt.MouseButton.RightButton):
-            mc.select(open_slider_dialog.selection)
-
+            if open_slider_dialog.selection:
+                mc.select(open_slider_dialog.selection)
 
 
 class context_menu(QtWidgets.QWidget):
@@ -466,7 +263,7 @@ class context_menu(QtWidgets.QWidget):
 
 
 ### Context Menu Stuff End ###
-
+##############################
 
 
 class OpenSliderDialog(QtWidgets.QDialog):
@@ -482,11 +279,12 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.create_layout()
         self.create_connections()
 
-
+        self.selection = None
         self.my_locator = None
         self.temp_slider_locators = None
         self.temp_loc_list = []
         self.aim_rig = None
+        self.ctrl_constraints = []
         self.exponent = 0
 
         # Context menu dictionaries
@@ -510,12 +308,11 @@ class OpenSliderDialog(QtWidgets.QDialog):
 
         self.make_loc_btn.setIcon(QtGui.QIcon(":locator.png"))
 
-
         # Selection Widgets
         self.sel_line_edit = QtWidgets.QLineEdit()
         self.sel_line_edit.setEnabled(False)
         # self.store_sel_btn = QtWidgets.QPushButton("")
-        self.store_sel_btn = customBut("")
+        self.store_sel_btn = customBut(self, "")
         self.store_sel_btn.setIcon(QtGui.QIcon(":selectByObject.png"))
 
         self.world_cb = QtWidgets.QCheckBox("World")
@@ -562,6 +359,8 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.expo_line_edit.setEnabled(False)
         self.expo_line_edit.setStyleSheet("QLineEdit { background-color: gray }")
 
+        self.include_frist_cb = QtWidgets.QCheckBox("Include 1st control")
+
         self.offset_btn = QtWidgets.QPushButton("Offset")
         self.offset_btn.setMaximumWidth(80)
         self.offset_btn.setMinimumHeight(25)
@@ -579,7 +378,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
         # Collapsible Widget Stuff
         self.collapsible_wdg_offset = CollapsibleWidget("Offset")
 
-
         offset_grid_layout = QtWidgets.QGridLayout()
         offset_grid_layout.addWidget(self.offset_label, 0, 0, 2, 1)
         offset_grid_layout.addWidget(self.offset_line_edit, 0, 1, 2, 1)
@@ -593,6 +391,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
 
         offset_btns_layout = QtWidgets.QHBoxLayout()
         offset_btns_layout.addStretch()
+        offset_btns_layout.addWidget(self.include_frist_cb)
         offset_btns_layout.addWidget(self.offset_btn)
         offset_btns_layout.addWidget(self.undo_offset_btn, alignment=QtCore.Qt.AlignRight)
 
@@ -608,10 +407,8 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.collapsible_wdg_bake = CollapsibleWidget("Bake")
 
         bake_h_layout = QtWidgets.QHBoxLayout()
-        bake_h_layout.addStretch()
-        bake_h_layout.addWidget(self.timeline_range_cb)
+        bake_h_layout.setContentsMargins(40, 1, 1, 1)
         bake_h_layout.addWidget(self.stay_constrained_cb)
-        bake_h_layout.addWidget(self.anim_layer_cb)
 
         bake_v_layout = QtWidgets.QVBoxLayout()
         bake_v_layout.addLayout(bake_h_layout)
@@ -728,6 +525,9 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.offset_btn.clicked.connect(self.get_offset_input)
         self.offset_btn.clicked.connect(self.offset_locs)
         self.undo_offset_btn.clicked.connect(self.undo_offset)
+
+        self.bake_btn.clicked.connect(self.bake_all)
+
         self.close_btn.clicked.connect(self.close)
 
 
@@ -775,7 +575,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
         self.sel_line_edit.setStyleSheet("QLineEdit { color: white; background-color: Sienna }")
 
 
-
     def make_menus(self):
         for cb in self.cb_menu_list:
             cb.conjure_menu(self.selection)
@@ -803,7 +602,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
             self.space_sel_line_edit.setStyleSheet("QLineEdit { color: white; background-color: Saddlebrown }")
 
 
-
     def update_line_edit_from_slider(self):
         # /2 to have finer increment
         self.slider_val = float(self.slider.value())/2
@@ -821,10 +619,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
         # Run if locator exists
         if self.temp_slider_locators:
 
-            print("temp_loc_list:", self.temp_loc_list)
-            print("chain_ctrls:", self.chain_ctrls)
             for i, ctrl in enumerate(self.chain_ctrls):
-                print("i in for loop: ", i)
                 # Find the overrides
                 if ctrl in self.chain_ctrl_override:
                     ctrl_index = self.chain_ctrl_override.index(ctrl)
@@ -834,10 +629,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
                     mc.xform(self.temp_loc_list[i], objectSpace=1, translation=self.offset_override_value)
 
                 else:
-                    print("in else")
-                    print("i in else: ", i)
                     self.offset_value = [x * self.slider_val for x in self.axis_matrix]
-                    print("temp_loc_list[i]:", self.temp_loc_list[i])
                     mc.xform(self.temp_loc_list[i], objectSpace=1, translation=self.offset_value)
 
         else:
@@ -849,6 +641,7 @@ class OpenSliderDialog(QtWidgets.QDialog):
         # Converting text unless it's empty
         if self.expo_line_edit.text():
             self.exponent = float(self.expo_line_edit.text())
+        self.include_first = self.include_frist_cb.isChecked()
 
 
     def update_expo_cb(self):
@@ -1005,7 +798,6 @@ class OpenSliderDialog(QtWidgets.QDialog):
             # firstLastKeys = fullKeyList[0], fullKeyList[-1]
             mc.bakeResults(bakee, time=timeSliderRange, preserveOutsideKeys=1)
 
-
         except:
             print("No keys?")
             pass
@@ -1131,7 +923,9 @@ class OpenSliderDialog(QtWidgets.QDialog):
                                  worldUpObject=self.rootLocList[i], worldUpVector=self.world_up_vector)
 
             self.axis_to_skip_if_locked(self.chain_ctrls[i], self.offsetLocList[i])
-            mc.orientConstraint(self.offsetLocList[i], self.chain_ctrls[i], mo=0)
+            ctrl_con = mc.orientConstraint(self.offsetLocList[i], self.chain_ctrls[i], mo=0)[0]
+
+            self.ctrl_constraints.append(ctrl_con)
 
         mc.select(clear=True)
 
@@ -1176,7 +970,11 @@ class OpenSliderDialog(QtWidgets.QDialog):
             print("Skip List: ", xyz_skip_list)
 
     def offset_locs(self):
-        i = 0
+        # make starting i val equal to offset if 'include first' check box is ticked
+        if self.include_first == True:
+            i = self.offset_multi + (self.offset_multi * self.exponent)
+        else:
+            i = 0
         for loc in self.targetLocList:
             animCurves = mc.listConnections(loc, t="animCurve")
             mc.keyframe(animCurves, edit=1, relative=1, timeChange=i)
@@ -1184,7 +982,11 @@ class OpenSliderDialog(QtWidgets.QDialog):
             i = i + self.offset_multi + (self.offset_multi * self.exponent)
 
     def undo_offset(self):
-        i = 0
+        # make starting i val equal to offset if 'include first' check box is ticked
+        if self.include_first == True:
+            i = self.offset_multi + (self.offset_multi * self.exponent)
+        else:
+            i = 0
         for loc in self.targetLocList:
             animCurves = mc.listConnections(loc, t="animCurve")
             mc.keyframe(animCurves, edit=1, relative=1, timeChange=-i)
@@ -1195,41 +997,56 @@ class OpenSliderDialog(QtWidgets.QDialog):
     #Bakeing
     def bake_all(self):
 
-        sel = mc.ls(sl=1)
+        sel = self.selection
         animLayer_name = sel[0] + "_base"
 
         minTime = mc.playbackOptions(q=1, minTime=1)
         maxTime = mc.playbackOptions(q=1, maxTime=1)
         time_range = minTime, maxTime
 
-        mc.animLayer(animLayer_name, override=1, addSelectedObjects=1, extractAnimation="BaseAnimation")
+        # Extract base animation to new layer
+        extract_lyr = mc.animLayer(animLayer_name, override=1, addSelectedObjects=1, extractAnimation="BaseAnimation")
 
         mc.bakeResults(sel, time=time_range, bakeOnOverrideLayer=True, preserveOutsideKeys=True)
+        bake_container = mc.ls(sl=1, type="container")[0]
 
         if mc.animLayer(sel, q=1, affectedLayers=1) and mc.animLayer('BakeResults', q=1, exists=1):
-            mc.rename('BakeResults', sel[0] + "_bk_lyr")
+            mc.rename('BakeResults', "AimTail_offset{0}_bk_lyr".format(int(self.offset_multi)))
 
-        mc.delete(sel, constraints=True)
+        # Copy anim back to Base layer and delete
+        mc.animLayer('BaseAnimation', e=1, copyAnimation=extract_lyr)
+        mc.delete(extract_lyr)
 
-    def get_frame_range
+        # Delete Asset Container (made from baking)
+        mc.select(bake_container)
+        mc.DeleteSelectedContainers()
 
-# if __name__ == "__main__":
-#     #     open_slider_dialog.close() # pylint: disable=E0601
-#
-#     try:
-#         open_slider_dialog.show()
-#     except:
-#         open_slider_dialog = OpenSliderDialog()
-#         open_slider_dialog.show()
+        if self.stay_constrained_cb.isChecked() == False:
+            self.delete_constraints()
+            self.delete_rig_stuff()
+
+    def delete_constraints(self):
+        mc.delete(self.ctrl_constraints, constraints=True)
+
 
 
 if __name__ == "__main__":
+    #     open_slider_dialog.close() # pylint: disable=E0601
 
     try:
-        open_slider_dialog.close() # pylint: disable=E0601
-        open_slider_dialog.deleteLater()
+        open_slider_dialog.show()
     except:
-        pass
+        open_slider_dialog = OpenSliderDialog()
+        open_slider_dialog.show()
 
-    open_slider_dialog = OpenSliderDialog()
-    open_slider_dialog.show()
+
+# if __name__ == "__main__":
+#
+#     try:
+#         open_slider_dialog.close() # pylint: disable=E0601
+#         open_slider_dialog.deleteLater()
+#     except:
+#         pass
+#
+#     open_slider_dialog = OpenSliderDialog()
+#     open_slider_dialog.show()
